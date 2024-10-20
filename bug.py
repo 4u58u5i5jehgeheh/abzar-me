@@ -1,6 +1,6 @@
 import logging
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, filters, CallbackContext
 import g4f
 
 # راه‌اندازی لاگ‌گیری
@@ -29,7 +29,7 @@ def main() -> None:
 
     # ثبت handlerها
     dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, respond))
+    dispatcher.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, respond))
 
     # شروع ربات
     updater.start_polling()
