@@ -4,12 +4,13 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 import g4f
 from serpapi import GoogleSearch  # کتابخانه SerpApi
+import re  # برای تشخیص کلمات مرتبط با جستجو
 
 # اعمال nest_asyncio
 nest_asyncio.apply()
 
 # راه‌اندازی لاگ‌گیری
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # شناسه عددی مالک ربات
@@ -37,22 +38,25 @@ def search_internet(query):
     
     return search_results if search_results else "هیچ نتیجه‌ای یافت نشد."
 
+# تابع برای تشخیص اینکه آیا پیام حاوی درخواست جستجو است
+def is_search_request(message):
+    search_keywords = ['جستجو', 'سرچ', 'پیدا کن', 'در اینترنت', 'دنبال کن', 'اطلاعات از اینترنت']
+    # استفاده از عبارات منظم برای بررسی اینکه آیا کلمات مرتبط با جستجو در پیام وجود دارند
+    return any(re.search(keyword, message) for keyword in search_keywords)
+
 # تابع برای پاسخ به پیام‌ها
 async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.from_user.id
     user_message = update.message.text.lower()  # پیام کاربر را به حروف کوچک تبدیل می‌کنیم
 
-    # بررسی برای درخواست جستجو
-    if 'جستجو کن' in user_message or 'سرچ بزن' in user_message:
-        search_query = user_message.replace('جستجو کن', '').replace('سرچ بزن', '').strip()
-        if search_query:
-            search_results = search_internet(search_query)
-            # ارسال نتایج جستجو به ChatGPT برای تحلیل
-            chatgpt_message = f"نتایج جستجو برای '{search_query}' به شرح زیر است:\n{search_results}\nلطفاً بر اساس این نتایج، یک پاسخ کامل ارائه بده."
-            response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": chatgpt_message}])
-            await update.message.reply_text(response)
-        else:
-            await update.message.reply_text("لطفاً موضوعی برای جستجو وارد کنید.")
+    # بررسی اینکه آیا کاربر درخواست جستجو دارد
+    if is_search_request(user_message):
+        search_query = user_message  # کل پیام کاربر را به عنوان عبارت جستجو استفاده می‌کنیم
+        search_results = search_internet(search_query)
+        # ارسال نتایج جستجو به ChatGPT برای تحلیل
+        chatgpt_message = f"نتایج جستجو برای '{search_query}' به شرح زیر است:\n{search_results}\nلطفاً بر اساس این نتایج، یک پاسخ کامل ارائه بده."
+        response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": chatgpt_message}])
+        await update.message.reply_text(response)
         return
 
     # اگر کاربر مالک ربات باشد
