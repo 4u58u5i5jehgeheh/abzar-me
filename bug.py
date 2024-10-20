@@ -11,24 +11,26 @@ nest_asyncio.apply()
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# شناسه مالک ربات
+# شناسه عددی مالک ربات
 OWNER_ID = 1877334512  # شناسه عددی مالک را اینجا وارد کنید
-OWNER_NAME = "محمدامین"  # نام مالک ربات
 
 # تابع برای پاسخ به پیام‌ها
 async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.from_user.id
     user_message = update.message.text
 
-    # بررسی مالکیت
+    # اگر کاربر مالک ربات باشد
     if user_id == OWNER_ID:
-        # ساخت پیام برای ارسال به هوش مصنوعی
-        chatgpt_message = f"{OWNER_NAME} هستم. تو دستیار من هستی. سوال من: {user_message}"
+        # پیام یادآوری به ChatGPT قبل از پاسخ
+        chatgpt_message = f"محمدامین هستم، من سازنده و مالک تو هستم و تو دستیار من روبو هستی. سوال من: {user_message}"
         response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": chatgpt_message}])
         
-        await update.message.reply_text(f"{OWNER_NAME}: {response}")  # پاسخ را با نام مالک ارسال کنید
+        await update.message.reply_text(f"محمدامین: {response}")  # پاسخ را با یادآوری مالک ارسال کنید
     else:
-        await update.message.reply_text("شما مجاز به استفاده از این ربات نیستید.")
+        # برای سایر کاربران، پیام عادی به ChatGPT ارسال می‌شود
+        response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": user_message}])
+        
+        await update.message.reply_text(response)  # پاسخ عادی به سایر کاربران
 
 # تابع برای شروع ربات
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
