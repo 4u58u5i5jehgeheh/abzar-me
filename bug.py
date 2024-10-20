@@ -3,8 +3,9 @@ import nest_asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 import g4f
-from serpapi import GoogleSearch  # کتابخانه SerpApi
-import re  # برای تشخیص کلمات مرتبط با جستجو
+from serpapi import GoogleSearch
+import re
+import shodan  # کتابخانه Shodan
 
 # اعمال nest_asyncio
 nest_asyncio.apply()
@@ -19,27 +20,29 @@ OWNER_ID = 1877334512  # شناسه عددی مالک را اینجا وارد �
 # کلید API برای SerpApi
 SERP_API_KEY = '34438daebabf5eb0dce8fac310d38a8555d22b2a66f9ffdc1b551d6ef276211e'  # کلید SerpApi شما
 
-# توکن ربات تلگرام
-TELEGRAM_TOKEN = '7686347838:AAHok7BBglSFxXzXyZdoaV2rQ_99kTdTdww'  # توکن ربات تلگرام شما
+# کلید API برای Shodan
+SHODAN_API_KEY = 'Y2xOSe6VAHoZXNTeeSoxZgFZt3Qz9WHf'  # کلید Shodan خود را اینجا وارد کنید
 
-# تابع برای جستجو در اینترنت از طریق SerpApi
-def search_internet(query):
-    params = {
-        "engine": "google",
-        "q": query,
-        "api_key": SERP_API_KEY
-    }
-    search = GoogleSearch(params)
-    results = search.get_dict()
-    
-    # جمع‌آوری متن نتایج جستجو
-    search_results = ""
-    for i, result in enumerate(results.get('organic_results', []), start=1):
-        search_results += f"{i}. {result.get('title')}: {result.get('snippet')}\n"
-        if i >= 3:  # حداکثر 3 نتیجه نمایش داده شود
-            break
-    
-    return search_results if search_results else "هیچ نتیجه‌ای یافت نشد."
+# توکن ربات تلگرام
+TELEGRAM_TOKEN = '7686347838:AAHok7BBglSFxZdoaV2rQ_99kTdTdww'  # توکن ربات تلگرام شما
+
+# راه‌اندازی Shodan
+shodan_api = shodan.Shodan(SHODAN_API_KEY)
+
+# تابع برای جستجو در Shodan
+def search_shodan(query):
+    try:
+        results = shodan_api.search(query)
+        search_results = ""
+        for result in results['matches'][:3]:  # حداکثر 3 نتیجه نمایش داده شود
+            search_results += f"IP: {result['ip_str']}\nData: {result['data']}\n\n"
+        return search_results if search_results else "هیچ نتیجه‌ای یافت نشد."
+    except Exception as e:
+        return f"خطا در جستجو: {str(e)}"
+
+# تابع برای تشخیص اینکه آیا پیام حاوی درخواست جستجو در Shodan است
+def is_shodan_request(message):
+    return 'ip' in message or 'دستور' in message or 'بررسی' in message  # بررسی عبارات مرتبط
 
 # تابع برای تشخیص اینکه آیا پیام حاوی درخواست جستجو است
 def is_search_request(message):
@@ -55,11 +58,17 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.from_user.id
     user_message = update.message.text.lower()  # پیام کاربر را به حروف کوچک تبدیل می‌کنیم
 
+    # بررسی اینکه آیا کاربر درخواست جستجو در Shodan دارد
+    if is_shodan_request(user_message):
+        search_query = user_message  # کل پیام کاربر را به عنوان عبارت جستجو استفاده می‌کنیم
+        search_results = search_shodan(search_query)
+        await update.message.reply_text(search_results)
+        return
+
     # بررسی اینکه آیا کاربر درخواست جستجو دارد
     if is_search_request(user_message):
         search_query = user_message  # کل پیام کاربر را به عنوان عبارت جستجو استفاده می‌کنیم
         search_results = search_internet(search_query)
-        # ارسال نتایج جستجو به ChatGPT برای تحلیل
         chatgpt_message = f"نتایج جستجو برای '{search_query}' به شرح زیر است:\n{search_results}\nلطفاً بر اساس این نتایج، یک پاسخ کامل ارائه بده."
         response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": chatgpt_message}])
         await update.message.reply_text(response)
@@ -67,39 +76,16 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # بررسی اینکه آیا کاربر می‌خواهد با امین صحبت کند
     if wants_to_talk_to_amin(user_message):
-        # ارسال پیام به امین
         await context.bot.send_message(chat_id=OWNER_ID, text=f"کاربر: {update.message.text}")
         await update.message.reply_text("پیام شما به امین ارسال شد.")
         return
 
     # اگر کاربر مالک ربات باشد
     if user_id == OWNER_ID:
-        # پیام یادآوری به ChatGPT قبل از پاسخ برای مالک
         chatgpt_message = f"محمدامین هستم، من سازنده و مالک تو هستم و تو دستیار من روبو هستی. سوال من: {user_message}"
         response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": chatgpt_message}])
-        
-        await update.message.reply_text(f"محمدامین: {response}")  # پاسخ را با یادآوری مالک ارسال کنید
+        await update.message.reply_text(f"محمدامین: {response}")
     else:
-        # برای سایر کاربران عادی
         chatgpt_message = f"شما دستیار Amin هستید و به جای او به این سوال پاسخ می‌دهید: {user_message}"
         response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": chatgpt_message}])
-        
-        await update.message.reply_text(response)  # پاسخ با یادآوری اینکه دستیار Amin هستید ارسال می‌شود
-
-# تابع برای شروع ربات
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text('سلام! من ربات GPT-4 هستم. بپرسید تا پاسخ بدهم.')
-
-def main() -> None:
-    # راه‌اندازی برنامه
-    application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-
-    # ثبت handlerها
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, respond))
-
-    # شروع ربات
-    application.run_polling()
-
-if __name__ == '__main__':
-    main()
+        await update.message
