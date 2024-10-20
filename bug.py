@@ -21,16 +21,17 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # اگر کاربر مالک ربات باشد
     if user_id == OWNER_ID:
-        # پیام یادآوری به ChatGPT قبل از پاسخ
+        # پیام یادآوری به ChatGPT قبل از پاسخ برای مالک
         chatgpt_message = f"محمدامین هستم، من سازنده و مالک تو هستم و تو دستیار من روبو هستی. سوال من: {user_message}"
         response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": chatgpt_message}])
         
         await update.message.reply_text(f"محمدامین: {response}")  # پاسخ را با یادآوری مالک ارسال کنید
     else:
-        # برای سایر کاربران، پیام عادی به ChatGPT ارسال می‌شود
-        response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": user_message}])
+        # برای سایر کاربران عادی
+        chatgpt_message = f"شما دستیار Amin هستید و به جای او به این سوال پاسخ می‌دهید: {user_message}"
+        response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": chatgpt_message}])
         
-        await update.message.reply_text(response)  # پاسخ عادی به سایر کاربران
+        await update.message.reply_text(response)  # پاسخ با یادآوری اینکه دستیار Amin هستید ارسال می‌شود
 
 # تابع برای شروع ربات
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
