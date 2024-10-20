@@ -17,7 +17,10 @@ logger = logging.getLogger(__name__)
 OWNER_ID = 1877334512  # شناسه عددی مالک را اینجا وارد کنید
 
 # کلید API برای SerpApi
-SERP_API_KEY = '34438daebabf5eb0dce8fac310d38a8555d22b2a66f9ffdc1b551d6ef276211e'  # کلید SerpApi خود را اینجا وارد کنید
+SERP_API_KEY = '34438daebabf5eb0dce8fac310d38a8555d22b2a66f9ffdc1b551d6ef276211e'  # کلید SerpApi شما
+
+# توکن ربات تلگرام
+TELEGRAM_TOKEN = '7686347838:AAHok7BBglSFxXzXyZdoaV2rQ_99kTdTdww'  # توکن ربات تلگرام شما
 
 # تابع برای جستجو در اینترنت از طریق SerpApi
 def search_internet(query):
@@ -41,8 +44,11 @@ def search_internet(query):
 # تابع برای تشخیص اینکه آیا پیام حاوی درخواست جستجو است
 def is_search_request(message):
     search_keywords = ['جستجو', 'سرچ', 'پیدا کن', 'در اینترنت', 'دنبال کن', 'اطلاعات از اینترنت']
-    # استفاده از عبارات منظم برای بررسی اینکه آیا کلمات مرتبط با جستجو در پیام وجود دارند
     return any(re.search(keyword, message) for keyword in search_keywords)
+
+# تابع برای تشخیص اینکه آیا کاربر می‌خواهد با امین صحبت کند
+def wants_to_talk_to_amin(message):
+    return any(re.search(keyword, message) for keyword in ['با امین صحبت کنم', 'پیام برای امین', 'به امین بگو', 'می‌خواهم با امین صحبت کنم'])
 
 # تابع برای پاسخ به پیام‌ها
 async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -57,6 +63,13 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         chatgpt_message = f"نتایج جستجو برای '{search_query}' به شرح زیر است:\n{search_results}\nلطفاً بر اساس این نتایج، یک پاسخ کامل ارائه بده."
         response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": chatgpt_message}])
         await update.message.reply_text(response)
+        return
+
+    # بررسی اینکه آیا کاربر می‌خواهد با امین صحبت کند
+    if wants_to_talk_to_amin(user_message):
+        # ارسال پیام به امین
+        await context.bot.send_message(chat_id=OWNER_ID, text=f"کاربر: {update.message.text}")
+        await update.message.reply_text("پیام شما به امین ارسال شد.")
         return
 
     # اگر کاربر مالک ربات باشد
@@ -78,11 +91,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text('سلام! من ربات GPT-4 هستم. بپرسید تا پاسخ بدهم.')
 
 def main() -> None:
-    # توکن ربات خود را اینجا قرار دهید
-    TOKEN = '7686347838:AAHok7BBglSFxXzXyZdoaV2rQ_99kTdTdww'
-
     # راه‌اندازی برنامه
-    application = ApplicationBuilder().token(TOKEN).build()
+    application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
     # ثبت handlerها
     application.add_handler(CommandHandler("start", start))
