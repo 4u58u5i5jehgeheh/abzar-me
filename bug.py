@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 # شناسه مالک ربات
 OWNER_ID = 1877334512  # شناسه عددی مالک را اینجا وارد کنید
+OWNER_NAME = "محمدامین"  # نام مالک ربات
 
 # تابع برای پاسخ به پیام‌ها
 async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -22,7 +23,7 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # بررسی مالکیت
     if user_id == OWNER_ID:
         response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": user_message}])
-        await update.message.reply_text(response)
+        await update.message.reply_text(f"{OWNER_NAME}: {response}")  # پاسخ را با نام مالک ارسال کنید
     else:
         await update.message.reply_text("شما مجاز به استفاده از این ربات نیستید.")
 
