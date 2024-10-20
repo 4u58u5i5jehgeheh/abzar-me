@@ -28,14 +28,14 @@ def search_internet(query):
     search = GoogleSearch(params)
     results = search.get_dict()
     
-    # جمع‌آوری لینک‌های جستجو شده (در این مثال ۳ لینک)
+    # جمع‌آوری متن نتایج جستجو
     search_results = ""
     for i, result in enumerate(results.get('organic_results', []), start=1):
-        search_results += f"{i}. {result.get('title')}: {result.get('link')}\n"
+        search_results += f"{i}. {result.get('title')}: {result.get('snippet')}\n"
         if i >= 3:  # حداکثر 3 نتیجه نمایش داده شود
             break
     
-    return search_results if search_results else "نتیجه‌ای یافت نشد."
+    return search_results if search_results else "هیچ نتیجه‌ای یافت نشد."
 
 # تابع برای پاسخ به پیام‌ها
 async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -47,7 +47,10 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         search_query = user_message.replace('جستجو کن', '').replace('سرچ بزن', '').strip()
         if search_query:
             search_results = search_internet(search_query)
-            await update.message.reply_text(f"نتایج جستجو برای '{search_query}':\n{search_results}")
+            # ارسال نتایج جستجو به ChatGPT برای تحلیل
+            chatgpt_message = f"نتایج جستجو برای '{search_query}' به شرح زیر است:\n{search_results}\nلطفاً بر اساس این نتایج، یک پاسخ کامل ارائه بده."
+            response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": chatgpt_message}])
+            await update.message.reply_text(response)
         else:
             await update.message.reply_text("لطفاً موضوعی برای جستجو وارد کنید.")
         return
