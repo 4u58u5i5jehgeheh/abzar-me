@@ -22,7 +22,10 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # بررسی مالکیت
     if user_id == OWNER_ID:
-        response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": user_message}])
+        # ساخت پیام برای ارسال به هوش مصنوعی
+        chatgpt_message = f"{OWNER_NAME} هستم. تو دستیار من هستی. سوال من: {user_message}"
+        response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": chatgpt_message}])
+        
         await update.message.reply_text(f"{OWNER_NAME}: {response}")  # پاسخ را با نام مالک ارسال کنید
     else:
         await update.message.reply_text("شما مجاز به استفاده از این ربات نیستید.")
