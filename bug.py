@@ -1,17 +1,30 @@
 import logging
+import nest_asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 import g4f
+
+# اعمال nest_asyncio
+nest_asyncio.apply()
 
 # راه‌اندازی لاگ‌گیری
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# شناسه مالک ربات
+OWNER_ID = 1877334512  # شناسه عددی مالک را اینجا وارد کنید
+
 # تابع برای پاسخ به پیام‌ها
 async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.message.from_user.id
     user_message = update.message.text
-    response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": user_message}])
-    await update.message.reply_text(response)
+
+    # بررسی مالکیت
+    if user_id == OWNER_ID:
+        response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": user_message}])
+        await update.message.reply_text(response)
+    else:
+        await update.message.reply_text("شما مجاز به استفاده از این ربات نیستید.")
 
 # تابع برای شروع ربات
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
