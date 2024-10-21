@@ -43,6 +43,26 @@ def search_internet(query):
     
     return search_results if search_results else "هیچ نتیجه‌ای یافت نشد."
 
+# تابع برای جستجو در تصاویر
+def search_images(query):
+    params = {
+        "engine": "google",
+        "q": query,
+        "tbm": "isch",  # برای جستجوی تصاویر
+        "api_key": SERP_API_KEY
+    }
+    search = GoogleSearch(params)
+    results = search.get_dict()
+    
+    # جمع‌آوری لینک تصاویر
+    image_links = []
+    for result in results.get('images_results', []):
+        image_links.append(result.get('original'))
+        if len(image_links) >= 3:  # حداکثر 3 تصویر نمایش داده شود
+            break
+            
+    return image_links
+
 # تابع برای تشخیص اینکه آیا پیام حاوی درخواست جستجو است
 def is_search_request(message):
     search_keywords = ['جستجو', 'سرچ', 'پیدا کن', 'در اینترنت', 'دنبال کن', 'اطلاعات از اینترنت']
@@ -78,8 +98,19 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         chatgpt_message = f"نتایج جستجو برای '{search_query}' به شرح زیر است:\n{search_results}\nلطفاً بر اساس این نتایج، یک پاسخ کامل ارائه بده."
         response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": chatgpt_message}])
         split_responses = split_message(response)  # تقسیم پاسخ‌های بلند
+
+        # ارسال پاسخ به کاربر
         for res in split_responses:
             await update.message.reply_text(html.unescape(res))  # تصحیح متن و ارسال بخش‌های پاسخ به کاربر
+        
+        # جستجوی تصاویر و ارسال آنها
+        image_links = search_images(search_query)
+        if image_links:
+            await update.message.reply_text("تصاویر مرتبط:")
+            for img in image_links:
+                await update.message.reply_photo(photo=img)  # ارسال تصویر به کاربر
+        else:
+            await update.message.reply_text("هیچ تصویری برای این موضوع پیدا نشد.")
         return
 
     # بررسی اینکه آیا کاربر می‌خواهد با امین صحبت کند
