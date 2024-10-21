@@ -21,7 +21,7 @@ OWNER_ID = 1877334512
 
 # کلیدهای API
 SERP_API_KEY = '34438daebabf5eb0dce8fac310d38a8555d22b2a66f9ffdc1b551d6ef276211e'
-TOMORROW_API_KEY = 'YOUR_TOMORROW_API_KEY'  # کلید API خود را اینجا وارد کنید
+TOMORROW_API_KEY = 'yrCD6jDNAXfwV6AyTU30J8isJTDkTgIJ'  # کلید API خود را اینجا وارد کنید
 
 # توکن ربات تلگرام
 TELEGRAM_TOKEN = '8110593355:AAHqiN3nNnoQZ7Xwcw2o0m7qxXsYmxy2NVY'
