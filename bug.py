@@ -6,6 +6,7 @@ import g4f
 from serpapi import GoogleSearch  # کتابخانه SerpApi
 import re  # برای تشخیص کلمات مرتبط با جستجو
 from langdetect import detect  # برای تشخیص زبان پیام
+import html  # برای تصحیح کاراکترهای HTML
 
 # اعمال nest_asyncio
 nest_asyncio.apply()
@@ -78,7 +79,7 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         response = g4f.ChatCompletion.create(model='gpt-4', messages=[{"role": "user", "content": chatgpt_message}])
         split_responses = split_message(response)  # تقسیم پاسخ‌های بلند
         for res in split_responses:
-            await update.message.reply_text(res)  # ارسال بخش‌های پاسخ به کاربر
+            await update.message.reply_text(html.unescape(res))  # تصحیح متن و ارسال بخش‌های پاسخ به کاربر
         return
 
     # بررسی اینکه آیا کاربر می‌خواهد با امین صحبت کند
@@ -96,7 +97,7 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         
         split_responses = split_message(response)  # تقسیم پاسخ‌های بلند
         for res in split_responses:
-            await update.message.reply_text(f"محمدامین: {res}")  # پاسخ را با یادآوری مالک ارسال کنید
+            await update.message.reply_text(html.unescape(f"محمدامین: {res}"))  # تصحیح متن و ارسال پاسخ را با یادآوری مالک ارسال کنید
     else:
         # برای سایر کاربران عادی
         if language == 'fa':
@@ -108,7 +109,7 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         
         split_responses = split_message(response)  # تقسیم پاسخ‌های بلند
         for res in split_responses:
-            await update.message.reply_text(res)  # ارسال بخش‌های پاسخ به کاربر
+            await update.message.reply_text(html.unescape(res))  # تصحیح متن و ارسال بخش‌های پاسخ به کاربر
 
 # تابع برای شروع ربات
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
